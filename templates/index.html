@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blockchain Dashboard</title>
+  <style>
+    :root {
+      --primary: #2e86de;
+      --accent: #21bef8;
+      --bg: #f0f4fb;
+      --white: #ffffff;
+      --text: #2c3e50;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      --radius: 10px;
+      --spacing: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #eef2f7, #e2f0ff);
+      color: var(--text);
+      padding: 0;
+    }
+
+    header {
+      background: var(--primary);
+      color: var(--white);
+      text-align: center;
+      padding: 1.2rem;
+      font-size: 1.8rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      box-shadow: var(--shadow);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      max-width: 1400px;
+      margin: auto;
+    }
+
+    .block {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      position: relative;
+      transition: transform 0.2s ease;
+      border-left: 4px solid var(--primary);
+    }
+
+    .block:hover {
+      transform: translateY(-3px);
+    }
+
+    .block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .block-number {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .block-proof {
+      font-size: 0.8rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      font-size: 0.85rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fdfdfd;
+      font-family: monospace;
+      color: #333;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    button.mine {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #72cae3, #38c2f8);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button.mine:hover {
+      background: linear-gradient(135deg, #72cae3, #38c2f8);
+    }
+
+    @media (max-width: 600px) {
+      header {
+        font-size: 1.5rem;
+      }
+
+      .grid {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>Blockchain Visualizer</header>
+
+  <div class="grid">
+    {% for block in chain %}
+    <div class="block">
+      <div class="block-header">
+        <span class="block-number">Block #{{ block.index }}</span>
+        <span class="block-proof">Nonce: {{ block.proof }}</span>
+      </div>
+
+      <div class="form-group">
+        <label>Transactions</label>
+        <textarea id="data-input-{{ block.index }}" {% if not loop.last %}readonly{% endif %}>
+{% for tx in block.transactions %}
+{{ tx.sender }} -> {{ tx.recipient }} : {{ tx.amount }}
+{% endfor %}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Prev Hash</label>
+        <input type="text" value="{{ block.previous_hash }}" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Hash</label>
+        <input type="text" value="{{ blockchain.hash(block) }}" readonly>
+      </div>
+
+      {% if loop.last %}
+      <button class="mine" onclick="mineBlock({{ block.index }})">Mine Block</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    function mineBlock(index){
+      const data = document.getElementById("data-input-"+index).value.trim();
+      fetch('/mine', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({data})
+      })
+      .then(async res => {
+        const msg = (await res.json()).message || "Block mined!";
+        if (!res.ok) { alert(msg); return; }
+        alert(msg); location.reload();
+      })
+      .catch(() => alert("Server error: could not mine block."));
+    }
+  </script>
+
+</body>
+</html>
